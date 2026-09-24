@@ -1,6 +1,6 @@
 # RAG Pipeline (LLMOps)
 
-> A production-ready Retrieval-Augmented Generation (RAG) pipeline for coding question answering, featuring comprehensive experiment tracking, model fine-tuning, and cloud deployment. It combines **ChromaDB** retrieval with **BAAI embeddings** and a fine-tuned **Qwen3-0.6B** model (**QLoRA + DPO**) for generation, with MLflow on DagsHub, DVC versioning, Dockerized FastAPI inference, and AWS ECS deployment with GPU support.
+> A production-ready Retrieval-Augmented Generation (RAG) pipeline for coding question answering, featuring comprehensive experiment tracking, model fine-tuning, and cloud deployment. It combines **ChromaDB** retrieval with **BAAI embeddings** and a fine-tuned **Qwen3-0.6B** model (**QLoRA and DPO**) for generation, with MLflow on DagsHub, DVC versioning, Dockerized FastAPI inference, and AWS ECS deployment with GPU support.
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.10%2B-ee4c2c.svg)](https://pytorch.org/)
