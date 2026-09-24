@@ -1,5 +1,24 @@
 # RAG Pipeline (LLMOps)
 
+> A production-ready Retrieval-Augmented Generation (RAG) pipeline for coding question answering, featuring comprehensive experiment tracking, model fine-tuning, and cloud deployment. It combines **ChromaDB** retrieval with **BAAI embeddings** and a fine-tuned **Qwen3-0.6B** model (**QLoRA + DPO**) for generation, with MLflow on DagsHub, DVC versioning, Dockerized FastAPI inference, and AWS ECS deployment with GPU support.
+
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/pytorch-2.10%2B-ee4c2c.svg)](https://pytorch.org/)
+[![Transformers](https://img.shields.io/badge/transformers-4.57-yellow.svg)](https://huggingface.co/docs/transformers)
+[![PEFT](https://img.shields.io/badge/peft-0.19-orange.svg)](https://huggingface.co/docs/peft)
+[![TRL](https://img.shields.io/badge/trl-0.14.0-green.svg)](https://huggingface.co/docs/trl)
+[![bitsandbytes](https://img.shields.io/badge/bitsandbytes-%3E%3D0.48-8a2be2.svg)](https://github.com/TimDettmers/bitsandbytes)
+[![ChromaDB](https://img.shields.io/badge/ChromaDB-vector%20store-purple.svg)](https://www.trychroma.com/)
+[![MLflow](https://img.shields.io/badge/MLflow-tracking-0194E2.svg)](https://mlflow.org/)
+[![DagsHub](https://img.shields.io/badge/DagsHub-remote%20tracking-FF6B35.svg)](https://dagshub.com/)
+[![DVC](https://img.shields.io/badge/DVC-data%20versioning-945DD6.svg)](https://dvc.org/)
+[![Docker](https://img.shields.io/badge/docker-containerized-2496ED.svg)](https://www.docker.com/)
+[![AWS](https://img.shields.io/badge/AWS-ECS%20Fargate-FF9900.svg)](https://aws.amazon.com/ecs/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-inference-009688.svg)](https://fastapi.tiangolo.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+---
+
 ## Table of Contents
 
 - Introduction
