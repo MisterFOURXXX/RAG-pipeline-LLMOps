@@ -19,70 +19,11 @@
 
 ---
 
-## Abstract
-
-This repository studies the design, evaluation, and production deployment of a **Retrieval-Augmented Generation (RAG) pipeline** for coding question answering. It provides a reproducible LLMOps framework that combines **ChromaDB** retrieval with **BAAI/bge-small-en-v1.5** embeddings and a **fine-tuned Qwen3-0.6B** generator trained with **QLoRA** and **Direct Preference Optimization (DPO)**. The work is positioned as systems-oriented machine learning research: it characterises how retrieval quality, prompt design, and preference-aligned generation interact, and operationalises them as a controlled experimental protocol with retrieval metrics (hit rate, MRR, MAP, nDCG), generation metrics (BLEU, ROUGE, BERTScore, perplexity), and performance metrics (query time, GPU memory, CPU). The repository contributes (i) a full data-to-deployment pipeline with DVC-versioned artefacts, (ii) an MLflow-on-DagsHub experiment-tracking layer for cross-run comparison, (iii) a four-condition ablation protocol (baseline, main RAG, retrieval top-k, chunk-size, embedding-model, DPO-vs-SFT), (iv) a Dockerized FastAPI inference service with GPU support, and (v) an AWS ECS deployment recipe with ECR, CloudWatch, and ALB integration. The central research question is whether a modestly sized, preference-aligned open model can deliver coding-assistant quality comparable to much larger closed models when coupled to strong retrieval, and whether the resulting system can be made transparent, comparable, and production-ready through MLOps discipline.
-
-**Keywords:** Retrieval-Augmented Generation, LLMOps, QLoRA, DPO, ChromaDB, BAAI embeddings, MLflow, DVC, experiment tracking, reproducible ML, cloud deployment, coding assistants.
-
----
-
-## Table of Contents
-
-- [Abstract](#abstract)
-- [1. Introduction and Research Context](#1-introduction-and-research-context)
-  - [1.1 Research Questions](#11-research-questions)
-  - [1.2 Hypotheses](#12-hypotheses)
-  - [1.3 Contributions](#13-contributions)
-- [2. Foundation and Related Work](#2-foundation-and-related-work)
-  - [2.1 Retrieval-Augmented Generation](#21-retrieval-augmented-generation)
-  - [2.2 Parameter-Efficient Fine-Tuning](#22-parameter-efficient-fine-tuning)
-  - [2.3 Preference Alignment and DPO](#23-preference-alignment-and-dpo)
-  - [2.4 Experiment Tracking and Data Versioning](#24-experiment-tracking-and-data-versioning)
-  - [2.5 Reproducibility and Open Science](#25-reproducibility-and-open-science)
-  - [2.6 Ethical and Scientific Scope](#26-ethical-and-scientific-scope)
-- [3. Methodology](#3-methodology)
-  - [3.1 Design](#31-design)
-  - [3.2 Core Components](#32-core-components)
-  - [3.3 High-Level Workflow](#33-high-level-workflow)
-  - [3.4 Data Collection and Preprocessing](#34-data-collection-and-preprocessing)
-  - [3.5 Vector Database and Retrieval](#35-vector-database-and-retrieval)
-  - [3.6 Model and Training](#36-model-and-training)
-  - [3.7 Experiment Tracking and Versioning](#37-experiment-tracking-and-versioning)
-- [4. Approach](#4-approach)
-  - [4.1 Evaluation](#41-evaluation)
-  - [4.2 Experimental Conditions and Ablations](#42-experimental-conditions-and-ablations)
-  - [4.3 Deployment as a Production Artifact](#43-deployment-as-a-production-artifact)
-  - [4.4 Reproducibility Plan](#44-reproducibility-plan)
-  - [4.5 Hardware Requirements](#45-hardware-requirements)
-- [5. Ethical Considerations and Limitations](#5-ethical-considerations-and-limitations)
-  - [5.1 Ethical Considerations](#51-ethical-considerations)
-  - [5.2 Limitations](#52-limitations)
-- [6. Features](#6-features)
-- [7. Project Structure](#7-project-structure)
-- [8. Get Started - Step-By-Step](#8-get-started---step-by-step)
-  - [8.1 Initial Setup Checklist](#81-initial-setup-checklist)
-  - [8.2 Model Experiment](#82-model-experiment)
-- [9. Docker Deployment](#9-docker-deployment)
-- [10. AWS Deployment](#10-aws-deployment)
-- [11. API Usage](#11-api-usage)
-- [12. Testing](#12-testing)
-- [13. Environment Variables](#13-environment-variables)
-- [14. Monitoring and Logging](#14-monitoring-and-logging)
-- [15. Troubleshooting](#15-troubleshooting)
-- [16. Contributing](#16-contributing)
-- [17. Conclusion](#17-conclusion)
-- [18. References](#18-references)
-- [19. License](#19-license)
-- [About](#about)
-
----
-
-## 1. Introduction and Research Context
+## Project Overview
 
 A production-ready Retrieval-Augmented Generation (RAG) pipeline for coding question answering, featuring comprehensive experiment tracking, model fine-tuning, and cloud deployment. This pipeline includes experiment tracking with MLflow on DagsHub, data version control with DVC, containerization with Docker, and deployment on AWS ECS with GPU support.
 
-This project is a reproducible LLMOps pipeline for building a coding assistant RAG system using ChromaDB for retrieval and a fine-tuned Qwen3-0.6B model (via QLoRA + DPO) for generation. It is designed for production deployment and educational purposes, with containerized inference on AWS ECS. The pipeline covers the full lifecycle of a RAG-based language model service:
+This project is a **reproducible LLMOps pipeline** for building a coding assistant RAG system using ChromaDB for retrieval and a fine-tuned Qwen3-0.6B model (via QLoRA + DPO) for generation. It is designed for production deployment and educational purposes, with containerized inference on AWS ECS. The pipeline covers the full lifecycle of a RAG-based language model service:
 
 - Raw data ingestion and preprocessing.
 - Vector database construction with BAAI embeddings.
@@ -94,26 +35,89 @@ This project is a reproducible LLMOps pipeline for building a coding assistant R
 - Dockerized inference.
 - AWS ECS deployment with GPU support.
 
-Retrieval-Augmented Generation systems are difficult to build reliably because retrieval quality, prompt design, and generation quality interact in complex ways. This project investigates how optimized retrieval combined with preference-aligned generation can improve coding-assistant answers while remaining reproducible and deployable. It also demonstrates how MLOps practices can make RAG research more transparent, comparable, and production-ready.
+Retrieval-Augmented Generation systems are difficult to build reliably because retrieval quality, prompt design, and generation quality interact in complex ways. This project demonstrates how optimized retrieval combined with preference-aligned generation can improve coding-assistant answers while remaining reproducible and deployable. It also demonstrates how MLOps practices can make RAG systems transparent, comparable, and production-ready.
 
-### 1.1 Research Questions
+### Engineering Goals
 
-This repository is organised around the following research questions:
+- **Modular pipeline:** every stage (data, vectorstore, training, RAG, evaluation) is an independently runnable module with a documented interface.
+- **Reproducibility:** every hyperparameter lives in version-controlled YAML, every artefact is DVC-tracked, and every run is MLflow-tracked.
+- **Deployability:** the same pipeline that trains the model also serves it, via a GPU-enabled Docker image and an AWS ECS deployment.
+- **Testability:** data, vectorstore, retrieval, model, RAG, and evaluation modules each have pytest coverage with a coverage report.
+- **Observability:** MLflow metrics, DVC pipeline status, CloudWatch logs, and API health checks give full visibility into training and serving.
 
-1. **RQ1 — Retrieval quality:** Does ChromaDB with BAAI/bge-small-en-v1.5 embeddings provide strong retrieval quality (hit rate, MRR, MAP, nDCG) for coding questions on Stack Overflow data?
-2. **RQ2 — Generation quality:** Does a fine-tuned Qwen3-0.6B with QLoRA and DPO improve generation quality (BLEU, ROUGE, BERTScore, perplexity) over the base model?
-3. **RQ3 — Retrieval + generation synergy:** Does combining retrieval with fine-tuned generation outperform generation-only baselines?
-4. **RQ4 — Ablation sensitivity:** How sensitive are retrieval and generation metrics to retrieval top-k, chunk size, embedding-model choice, and DPO vs. SFT?
-5. **RQ5 — Reproducibility and deployment:** Can MLflow + DVC + Docker + AWS ECS make a RAG research pipeline reproducible across machines and deployable as a production artifact?
+### Table of Contents
 
-### 1.2 Hypotheses
+- [Project Overview](#project-overview)
+- [1. Introduction and Context](#1-introduction-and-context)
+- [2. Foundation](#2-foundation)
+  - [2.1 Retrieval-Augmented Generation](#21-retrieval-augmented-generation)
+  - [2.2 Parameter-Efficient Fine-Tuning](#22-parameter-efficient-fine-tuning)
+  - [2.3 Preference Alignment and DPO](#23-preference-alignment-and-dpo)
+  - [2.4 Experiment Tracking and Data Versioning](#24-experiment-tracking-and-data-versioning)
+  - [2.5 Reproducibility Engineering](#25-reproducibility-engineering)
+  - [2.6 Intended Scope](#26-intended-scope)
+- [3. System Design](#3-system-design)
+  - [3.1 Architecture Overview](#31-architecture-overview)
+  - [3.2 Core Components](#32-core-components)
+  - [3.3 High-Level Workflow](#33-high-level-workflow)
+  - [3.4 Data Collection and Preprocessing](#34-data-collection-and-preprocessing)
+  - [3.5 Vector Database and Retrieval](#35-vector-database-and-retrieval)
+  - [3.6 Model and Training](#36-model-and-training)
+  - [3.7 Experiment Tracking and Versioning](#37-experiment-tracking-and-versioning)
+  - [3.8 Deployment as a Production Artifact](#38-deployment-as-a-production-artifact)
+  - [3.9 Reproducibility Plan](#39-reproducibility-plan)
+  - [3.10 Hardware Requirements](#310-hardware-requirements)
+- [4. Evaluation](#4-evaluation)
+  - [4.1 Evaluation Strategy](#41-evaluation-strategy)
+  - [4.2 Ablations](#42-ablations)
+  - [4.3 Metrics](#43-metrics)
+- [5. Project Structure](#5-project-structure)
+- [6. Get Started - Step-By-Step](#6-get-started---step-by-step)
+  - [6.1 Initial Setup Checklist](#61-initial-setup-checklist)
+  - [6.2 Model Experiment](#62-model-experiment)
+- [7. Docker Deployment](#7-docker-deployment)
+- [8. AWS Deployment](#8-aws-deployment)
+- [9. API Usage](#9-api-usage)
+- [10. Testing](#10-testing)
+- [11. Environment Variables](#11-environment-variables)
+- [12. Monitoring and Logging](#12-monitoring-and-logging)
+- [13. Troubleshooting](#13-troubleshooting)
+- [14. Engineering Considerations and Limitations](#14-engineering-considerations-and-limitations)
+- [15. Conclusion](#15-conclusion)
+- [16. Contributing](#16-contributing)
+- [17. References](#17-references)
+- [18. License](#18-license)
+- [About](#about)
 
-- **H1:** A fine-tuned Qwen3-0.6B with DPO improves generation quality (BLEU, ROUGE, BERTScore) over the base model.
-- **H2:** ChromaDB with BAAI embeddings provides strong retrieval quality (high hit rate, MRR, nDCG) for coding questions.
-- **H3:** Combining retrieval with fine-tuned generation outperforms generation-only baselines.
-- **H4:** MLflow + DVC enable reliable reproduction of retrieval and generation experiments across machines.
+---
 
-### 1.3 Contributions
+## 1. Introduction and Context
+
+This project is a reproducible LLMOps pipeline for building a coding assistant RAG system using ChromaDB for retrieval and a fine-tuned Qwen3-0.6B model (via QLoRA + DPO) for generation. It is designed for production deployment and educational purposes, with containerized inference on AWS ECS. The pipeline covers the full lifecycle of a RAG-based language model service:
+
+1. Raw data ingestion and preprocessing.
+2. Vector database construction with BAAI embeddings.
+3. Model fine-tuning with QLoRA and DPO.
+4. Retrieval and generation pipeline with structured output.
+5. Experiment tracking with MLflow on DagsHub.
+6. Data and model versioning with DVC.
+7. Multi-metric evaluation for retrieval and generation.
+8. Dockerized inference.
+9. AWS ECS deployment with GPU support.
+
+Retrieval-Augmented Generation systems are difficult to build reliably because retrieval quality, prompt design, and generation quality interact in complex ways. This project investigates how optimized retrieval combined with preference-aligned generation can improve coding-assistant answers while remaining reproducible and deployable. It also demonstrates how MLOps practices can make RAG engineering more transparent, comparable, and production-ready.
+
+### 1.1 Project Scope
+
+- **Retrieval:** ChromaDB with BAAI/bge-small-en-v1.5 embeddings, chunked at 512/64, top-k = 10.
+- **Generation:** Qwen3-0.6B fine-tuned with QLoRA (r=16, alpha=32) and DPO (beta=0.1).
+- **Tracking:** MLflow on DagsHub for parameters, metrics, and artifacts.
+- **Versioning:** DVC for raw data, processed splits, vector index, and model artifacts.
+- **Serving:** FastAPI with `/health`, `/query`, and `/batch_query` endpoints.
+- **Deployment:** Docker image with GPU support and Nginx reverse proxy; AWS ECS Fargate with GPU for serving; CloudWatch for logs.
+- **Testing:** Pytest coverage for data, vectorstore, retrieval, model, RAG, and evaluation.
+
+### 1.2 Deliverables
 
 1. A modular, end-to-end RAG pipeline (data ingestion → vector DB → fine-tuned LLM → structured answer).
 2. A BAAI-embedded ChromaDB retrieval layer with explicit chunking (512/64) and top-k control.
@@ -122,27 +126,27 @@ This repository is organised around the following research questions:
 5. A four-condition ablation protocol for retrieval top-k, chunk size, embedding-model choice, and DPO vs. SFT.
 6. A reproducibility protocol using MLflow on DagsHub, DVC versioning, Docker images, and CPU-only tests.
 7. A production deployment recipe on AWS ECS with GPU support, CloudWatch logging, and ALB integration.
-8. An explicit ethics, limitations, and dual-use statement for RAG research.
+8. An explicit engineering limitations and dual-use statement for RAG systems.
 
 ---
 
-## 2. Foundation and Related Work
+## 2. Foundation
 
-This chapter provides the academic foundation for the repository. It situates the pipeline within existing work on Retrieval-Augmented Generation, parameter-efficient fine-tuning, preference alignment, experiment tracking, and reproducible ML.
+This chapter documents the technical foundations that the pipeline is built on, and the rationale for each technology choice.
 
 ### 2.1 Retrieval-Augmented Generation
 
-Retrieval-Augmented Generation (RAG) combines a dense retrieval stage with a conditional text generator. Lewis et al. (2020) introduced RAG as a way to ground generation in a non-parametric memory, improving factual accuracy and allowing knowledge updates without retraining. Subsequent work extended RAG to open-domain QA (Karpukhin et al., 2020; Izacard & Grave, 2021), to long-form generation (Borgeaud et al., 2022), and to instruction-following assistants (Shi et al., 2023). The present project uses RAG specifically for **coding question answering**, where the retrieval corpus is Stack Overflow Q&A and the generation target is a code-centric answer.
+Retrieval-Augmented Generation (RAG) combines a dense retrieval stage with a conditional text generator. Lewis et al. (2020) introduced RAG as a way to ground generation in a non-parametric memory, improving factual accuracy and allowing knowledge updates without retraining. Subsequent work extended RAG to open-domain QA (Karpukhin et al., 2020; Izacard & Grave, 2021), to long-form generation (Borgeaud et al., 2022), and to instruction-following assistants (Shi et al., 2023). This project uses RAG specifically for coding question answering, where the retrieval corpus is Stack Overflow Q&A and the generation target is a code-centric answer.
 
 The choice of **ChromaDB + BAAI/bge-small-en-v1.5** follows the now-standard dense-retrieval recipe: a lightweight, 384-dimensional embedder with strong MTEB performance (Xiao et al., 2023), coupled to a persistent local vector store that supports exact and approximate nearest-neighbour search.
 
 ### 2.2 Parameter-Efficient Fine-Tuning
 
-Full fine-tuning of even modest LLMs is prohibitively expensive. Parameter-efficient fine-tuning (PEFT) methods such as **LoRA** (Hu et al., 2022) and **QLoRA** (Dettmers et al., 2023) reduce trainable parameters by orders of magnitude while preserving most of the downstream quality. This repository uses QLoRA with **r = 16, alpha = 32, dropout = 0.1** and **4-bit NF4 quantisation**, consistent with the recommendations of Dettmers et al. (2023).
+Full fine-tuning of even modest LLMs is prohibitively expensive. Parameter-efficient fine-tuning (PEFT) methods such as **LoRA** (Hu et al., 2022) and **QLoRA** (Dettmers et al., 2023) reduce trainable parameters by orders of magnitude while preserving most of the downstream quality. This repository uses QLoRA with `r = 16`, `alpha = 32`, `dropout = 0.1` and **4-bit NF4 quantisation**, consistent with the recommendations of Dettmers et al. (2023).
 
 ### 2.3 Preference Alignment and DPO
 
-Direct Preference Optimization (Rafailov et al., 2023) reframes RLHF as a supervised classification problem on preference pairs, eliminating the need for a separate reward model and PPO loop. DPO has become the standard alignment method for small, open models because it is stable, cheap, and competitive with RLHF on many tasks. This repository uses **DPO with beta = 0.1** as the final training stage after QLoRA.
+**Direct Preference Optimization** (Rafailov et al., 2023) reframes RLHF as a supervised classification problem on preference pairs, eliminating the need for a separate reward model and PPO loop. DPO has become the standard alignment method for small, open models because it is stable, cheap, and competitive with RLHF on many tasks. This repository uses **DPO with beta = 0.1** as the final training stage after QLoRA.
 
 ### 2.4 Experiment Tracking and Data Versioning
 
@@ -154,9 +158,9 @@ MLOps practice separates **code**, **data**, and **experiment state**. This repo
 
 This combination mirrors the recommendations of Sculley et al. (2015) on hidden technical debt in ML systems and of the MLOps literature on reproducibility (Garg et al., 2021; Kreuzberger et al., 2023).
 
-### 2.5 Reproducibility and Open Science
+### 2.5 Reproducibility Engineering
 
-Reproducibility in RAG research is difficult because retrieval is corpus-dependent, generation is stochastic, and quantisation affects numeric behaviour. This repository addresses reproducibility through:
+Reproducibility in RAG engineering is difficult because retrieval is corpus-dependent, generation is stochastic, and quantisation affects numeric behaviour. This repository addresses reproducibility through:
 
 - all hyperparameters stored in `params.yaml` (version-controlled),
 - DVC-tracked datasets, indices, and model artifacts,
@@ -165,19 +169,19 @@ Reproducibility in RAG research is difficult because retrieval is corpus-depende
 - CPU-only tests for non-model components,
 - `.env.example` for explicit environment-variable documentation.
 
-The goal is not to claim perfect determinism, but to make the pipeline **auditable and reusable** for downstream research.
+The goal is not to claim perfect determinism, but to make the pipeline **auditable and reusable** across machines and deployments.
 
-### 2.6 Ethical and Scientific Scope
+### 2.6 Intended Scope
 
-This repository is intended **strictly for research and production engineering**: to characterise how retrieval and preference-aligned generation interact, and how MLOps discipline can make RAG systems transparent, comparable, and deployable. The Stack Overflow data is used under its original license; generated code may contain insecure, biased, or outdated patterns. Automatic metrics (BLEU, ROUGE, BERTScore) are proxies for quality and should not replace human evaluation in high-stakes settings.
+This repository is intended for research and production engineering: to characterise how retrieval and preference-aligned generation interact, and how MLOps discipline can make RAG systems transparent, comparable, and deployable. The Stack Overflow data is used under its original license; generated code may contain insecure, biased, or outdated patterns. Automatic metrics (BLEU, ROUGE, BERTScore) are proxies for quality and should not replace human evaluation in high-stakes settings.
 
 ---
 
-## 3. Methodology
+## 3. System Design
 
-### 3.1 Design
+### 3.1 Architecture Overview
 
-This project follows a production-grade, reproducible ML engineering design. The central goal is to build an end-to-end RAG pipeline that retrieves relevant Stack Overflow Q&A chunks and generates accurate coding answers with a fine-tuned Qwen3-0.6B model. The study compares retrieval strategies and generation configurations using retrieval and generation metrics.
+This project follows a production-grade, reproducible ML engineering design. The central goal is to build an end-to-end RAG pipeline that retrieves relevant Stack Overflow Q&A chunks and generates accurate coding answers with a fine-tuned Qwen3-0.6B model. The system compares retrieval strategies and generation configurations using retrieval and generation metrics.
 
 ### 3.2 Core Components
 
@@ -268,34 +272,7 @@ AWS ECS deployment with GPU support
 - **Configuration:** All hyperparameters stored in `params.yaml`.
 - **DVC Experiments:** `dvc exp run --set-param ...` for parameter sweeps.
 
----
-
-## 4. Approach
-
-### 4.1 Evaluation
-
-Evaluation is performed on the held-out test set using:
-
-- **Retrieval Metrics:** Hit rate@k (1, 3, 5, 10), MRR, MAP@10, nDCG@10.
-- **Generation Metrics:** BLEU, ROUGE-1/2/L, BERTScore precision/recall/F1, perplexity.
-- **Performance Metrics:** Average query time (ms), retrieval time (s), generation time (s), GPU memory (GB), CPU percent.
-- **Training Metrics:** Final train loss, final eval loss, best eval loss, total steps.
-
-Metrics are saved to DVC-tracked files and logged to MLflow.
-
-### 4.2 Experimental Conditions and Ablations
-
-- **Baseline:** Base Qwen3-0.6B without retrieval.
-- **Main Condition:** RAG pipeline with fine-tuned Qwen3-0.6B.
-- **Ablations:**
-  - Retrieval top-k: 5, 10, 20.
-  - Chunk size: 256, 512, 1024.
-  - Embedding model: BAAI `bge-small` vs. `bge-base`.
-  - Without retrieval (generation-only).
-  - Without DPO (SFT only).
-- **Replication:** Run multiple seeds where compute permits and report mean ± standard deviation.
-
-### 4.3 Deployment as a Production Artifact
+### 3.8 Deployment as a Production Artifact
 
 - **Inference API:** FastAPI service with `/health`, `/query`, and `/batch_query` endpoints.
 - **Containerization:** Docker with GPU support and Nginx reverse proxy.
@@ -303,7 +280,7 @@ Metrics are saved to DVC-tracked files and logged to MLflow.
 - **Process Management:** Supervisor for multi-process container orchestration.
 - **Purpose:** Production-ready coding assistant API.
 
-### 4.4 Reproducibility Plan
+### 3.9 Reproducibility Plan
 
 - All configurations stored in version-controlled `params.yaml`.
 - Raw data, processed splits, vector index, and models tracked with DVC.
@@ -312,7 +289,7 @@ Metrics are saved to DVC-tracked files and logged to MLflow.
 - Tests included for data, vectorstore, retrieval, model, RAG, and evaluation.
 - Environment variables documented in `.env.example`.
 
-### 4.5 Hardware Requirements
+### 3.10 Hardware Requirements
 
 - **GPU:** NVIDIA GPU with at least 12GB VRAM (for training).
 - **RAM:** 16GB minimum, 32GB recommended.
@@ -326,42 +303,52 @@ Metrics are saved to DVC-tracked files and logged to MLflow.
 
 ---
 
-## 5. Ethical Considerations and Limitations
+## 4. Evaluation
 
-### 5.1 Ethical Considerations
+### 4.1 Evaluation Strategy
 
-- Stack Overflow data is used under its original license; users must verify terms.
-- Generated code may contain insecure, biased, or outdated patterns.
-- Automatic metrics are proxies and should not replace human evaluation.
-- The model should not be deployed in high-stakes settings without further validation.
+Evaluation is performed on the held-out test set using:
 
-### 5.2 Limitations
+- **Retrieval Metrics:** Hit rate@k (1, 3, 5, 10), MRR, MAP@10, nDCG@10.
+- **Generation Metrics:** BLEU, ROUGE-1/2/L, BERTScore precision/recall/F1, perplexity.
+- **Performance Metrics:** Average query time (ms), retrieval time (s), generation time (s), GPU memory (GB), CPU percent.
+- **Training Metrics:** Final train loss, final eval loss, best eval loss, total steps.
 
-- BLEU, ROUGE, and BERTScore may not fully reflect code correctness.
-- Retrieval quality depends on the embedding model and chunking strategy.
-- 4-bit quantization may affect generation quality.
-- Default training runs use 1 epoch; production requires more.
-- AWS ECS with GPU is more expensive than CPU-only inference.
-- Stack Overflow data may contain biases and outdated solutions.
+Metrics are saved to DVC-tracked files and logged to MLflow.
+
+### 4.2 Ablations
+
+- **Baseline:** Base Qwen3-0.6B without retrieval.
+- **Main Condition:** RAG pipeline with fine-tuned Qwen3-0.6B.
+- **Ablations:**
+  - Retrieval top-k: 5, 10, 20.
+  - Chunk size: 256, 512, 1024.
+  - Embedding model: BAAI `bge-small` vs. `bge-base`.
+  - Without retrieval (generation-only).
+  - Without DPO (SFT only).
+- **Replication:** Run multiple seeds where compute permits and report mean ± standard deviation.
+
+### 4.3 Metrics
+
+| Category | Metric | Definition |
+|---|---|---|
+| Retrieval | Hit rate@k | Fraction of queries where the ground-truth chunk is in the top-k retrieved |
+| Retrieval | MRR | Mean Reciprocal Rank of the ground-truth chunk |
+| Retrieval | MAP@10 | Mean Average Precision at rank 10 |
+| Retrieval | nDCG@10 | Normalised Discounted Cumulative Gain at rank 10 |
+| Generation | BLEU | Precision-oriented n-gram overlap with references |
+| Generation | ROUGE-1/2/L | N-gram and longest-common-subsequence overlap |
+| Generation | BERTScore | Semantic similarity to reference (P / R / F1) |
+| Generation | Perplexity | Language-modelling quality of the generated text |
+| Performance | Query time (ms) | End-to-end latency per query |
+| Performance | Retrieval time (s) | Time spent in the retrieval stage |
+| Performance | Generation time (s) | Time spent in the generation stage |
+| Performance | GPU memory (GB) | Peak VRAM usage during inference |
+| Performance | CPU percent | Average CPU utilisation during inference |
 
 ---
 
-## 6. Features
-
-- **End-to-End RAG Pipeline:** Data → Vector DB → Fine-tuned LLM → Answer.
-- **Vector Database:** ChromaDB with BAAI embeddings for semantic search.
-- **DPO + QLoRA Fine-tuning:** Efficient 4-bit quantization + LoRA adapters.
-- **Experiment Tracking:** MLflow with DagsHub integration.
-- **Data Version Control:** DVC for dataset, index, and model versioning.
-- **Comprehensive Metrics:** Hit rate, MRR, MAP, nDCG, BLEU, ROUGE, BERTScore, perplexity.
-- **Performance Monitoring:** Query time, retrieval time, generation time, GPU memory, CPU.
-- **Docker Containerization:** GPU-enabled Docker image with Nginx and Supervisor.
-- **AWS Deployment:** ECR, ECS Fargate with GPU, CloudWatch, ALB.
-- **Integration Tests:** Pytest with coverage reporting.
-
----
-
-## 7. Project Structure
+## 5. Project Structure
 
 ```
 llmops-rag-pipeline/
@@ -420,9 +407,9 @@ llmops-rag-pipeline/
 
 ---
 
-## 8. Get Started - Step-By-Step
+## 6. Get Started - Step-By-Step
 
-### 8.1 Initial Setup Checklist
+### 6.1 Initial Setup Checklist
 
 ```bash
 # 1. Create virtual environment
@@ -466,7 +453,7 @@ export MLFLOW_TRACKING_PASSWORD=$DAGSHUB_TOKEN
 python scripts/run_pipeline.py
 ```
 
-### 8.2 Model Experiment
+### 6.2 Model Experiment
 
 #### Step 1: Environment Setup
 
@@ -780,7 +767,7 @@ dvc exp run --set-param training.epochs=3
 
 ---
 
-## 9. Docker Deployment
+## 7. Docker Deployment
 
 ### Build and Run Locally
 
@@ -851,7 +838,7 @@ curl -X POST http://localhost:8000/batch_query \
 
 ---
 
-## 10. AWS Deployment
+## 8. AWS Deployment
 
 ### Setup AWS Requirements
 
@@ -947,7 +934,7 @@ aws ecs describe-tasks \
 
 ---
 
-## 11. API Usage
+## 9. API Usage
 
 ### Base URL
 
@@ -1035,7 +1022,7 @@ print(answer)
 
 ---
 
-## 12. Testing
+## 10. Testing
 
 ### Run All Tests
 
@@ -1070,7 +1057,7 @@ open htmlcov/index.html
 
 ---
 
-## 13. Environment Variables
+## 11. Environment Variables
 
 Create a `.env` file for persistent configuration:
 
@@ -1109,7 +1096,7 @@ source .env
 
 ---
 
-## 14. Monitoring and Logging
+## 12. Monitoring and Logging
 
 ### MLflow Metrics Tracked
 
@@ -1180,7 +1167,7 @@ dvc plots show
 
 ---
 
-## 15. Troubleshooting
+## 13. Troubleshooting
 
 ### Common Issues and Solutions
 
@@ -1265,26 +1252,46 @@ aws ecs describe-tasks --cluster llmops-cluster --tasks TASK_ID
 
 ---
 
+## 14. Engineering Considerations and Limitations
+
+### 14.1 Ethical and Operational Considerations
+
+- Stack Overflow data is used under its original license; users must verify terms before redistribution.
+- Generated code may contain insecure, biased, or outdated patterns; human review is required before any production use.
+- Automatic metrics (BLEU, ROUGE, BERTScore) are proxies for quality and should not replace human evaluation in high-stakes settings.
+- The model should not be deployed in high-stakes settings without further validation, safety review, and human-in-the-loop processes.
+
+### 14.2 Technical Limitations
+
+- BLEU, ROUGE, and BERTScore may not fully reflect code correctness; execution-based evaluation is not implemented.
+- Retrieval quality depends on the embedding model and chunking strategy; the current defaults are tuned for Stack Overflow Q&A and may not transfer to other domains.
+- 4-bit quantization may affect generation quality relative to full-precision baselines.
+- Default training runs use 1 epoch; production deployments require more epochs and larger training corpora.
+- AWS ECS with GPU is more expensive than CPU-only inference; the deployment is sized for correctness, not for cost-optimality.
+- Stack Overflow data may contain biases and outdated solutions, and the retrieval layer will surface them if they are present in the corpus.
+
+---
+
+## 15. Conclusion
+
+This repository demonstrates that a modestly sized, preference-aligned open model (Qwen3-0.6B) coupled to strong dense retrieval (ChromaDB + BAAI/bge-small-en-v1.5) can deliver competitive coding-assistant quality on Stack Overflow data when trained with QLoRA + DPO, and that the resulting system can be made reproducible and production-ready through disciplined MLOps practice. Key engineering outcomes:
+
+- **Retrieval quality is strong.** ChromaDB + BAAI yields `hit_rate@5 = 1.000`, `MRR = 0.756`, `MAP@10 = 0.712`, and `nDCG@10 = 0.789` — placing the retrieval layer in the strong tier for coding Q&A.
+- **Fine-tuned generation is measurable.** `BERTScore F1 = 0.8123` and `perplexity = 2.71` on the held-out test set indicate that DPO-aligned generation is coherent and semantically close to reference answers.
+- **Deployment is reproducible.** MLflow on DagsHub, DVC versioning, Docker containerisation, and AWS ECS deployment form a complete, auditable production path.
+- **Ablation sensitivity is documented.** Retrieval top-k, chunk size, embedding-model choice, and DPO-vs-SFT are all surfaced as tunable engineering knobs.
+
+The pipeline is designed as an engineering artefact: every experiment is tracked, every artefact is versioned, and every stage is independently testable. It supports defensive ablation of retrieval quality, generation quality, and deployment overhead — and it is intended to be forked, extended, and reused for downstream LLMOps work.
+
+---
+
 ## 16. Contributing
 
 Contributions are welcome for production hardening, retrieval metrics, ablation support, and documentation. Please open an issue or pull request with a clear description, and ensure tests pass before submitting.
 
 ---
 
-## 17. Conclusion
-
-This repository demonstrates that a **modestly sized, preference-aligned open model (Qwen3-0.6B) coupled to strong dense retrieval (ChromaDB + BAAI/bge-small-en-v1.5)** can deliver competitive coding-assistant quality on Stack Overflow data when trained with QLoRA + DPO, and that the resulting system can be made reproducible and production-ready through disciplined MLOps practice. Key findings:
-
-- **Retrieval quality is strong.** ChromaDB + BAAI yields hit_rate@5 = 1.000, MRR = 0.756, MAP@10 = 0.712, and nDCG@10 = 0.789 — placing the retrieval layer in the strong tier for coding Q&A.
-- **Fine-tuned generation is measurable.** BERTScore F1 = 0.8123 and perplexity = 2.71 on the held-out test set indicate that DPO-aligned generation is coherent and semantically close to reference answers.
-- **Deployment is reproducible.** MLflow on DagsHub, DVC versioning, Docker containerisation, and AWS ECS deployment form a complete, auditable production path.
-- **Ablation sensitivity is documented.** Retrieval top-k, chunk size, embedding-model choice, and DPO-vs-SFT are all surfaced as tunable research knobs.
-
-The pipeline is designed as a **research artefact**: every experiment is tracked, every artefact is versioned, and every stage is independently testable. It supports defensive ablation of retrieval quality, generation quality, and deployment overhead — and it is intended to be forked, extended, and reused for downstream LLMOps research.
-
----
-
-## 18. References
+## 17. References
 
 1. Lewis, P., et al. (2020). *Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks.* NeurIPS.
 2. Karpukhin, V., et al. (2020). *Dense Passage Retrieval for Open-Domain Question Answering.* EMNLP.
@@ -1309,7 +1316,7 @@ The pipeline is designed as a **research artefact**: every experiment is tracked
 
 Additional resources referenced by the original project:
 
-- `ChromaDB` documentation for persistent vector storage.
+- ChromaDB documentation for persistent vector storage.
 - `sentence-transformers` documentation for BAAI embedding models.
 - Hugging Face `transformers`, `peft`, `trl`, and `bitsandbytes` for quantized fine-tuning.
 - MLflow and DagsHub documentation for experiment tracking.
@@ -1318,16 +1325,16 @@ Additional resources referenced by the original project:
 
 ---
 
-## 19. License
+## 18. License
 
 MIT License - see `LICENSE` file for details.
 
-Note: This pipeline is designed for production and educational purposes. For real deployments, ensure proper security, monitoring, scaling, access control, and compliance with the licenses of the data and base model.
+**Note:** This pipeline is designed for production and educational purposes. For real deployments, ensure proper security, monitoring, scaling, access control, and compliance with the licenses of the data and base model.
 
-Provided for academic and production-engineering research use. Redistribution of the pipeline outside a research or production-engineering context is discouraged; if you fork this repository, preserve the [§5 Ethics and Limitations](#5-ethical-considerations-and-limitations) section verbatim.
+Provided for research and production-engineering use. Redistribution of the pipeline outside a research or production-engineering context is discouraged; if you fork this repository, preserve the [§14 Engineering Considerations and Limitations](#14-engineering-considerations-and-limitations) section verbatim.
 
 ---
 
 ## About
 
-This repository is maintained as a reproducible LLMOps research artefact. It is intended to support retrieval-augmented generation research, preference-alignment studies on small open models, MLOps toolchain evaluation, and reproducible production deployment of RAG systems. The framework is designed to be modular, portable across commodity GPU hosts, and reusable across production RAG stacks. It demonstrates full-lifecycle systems thinking — data versioning, retrieval, fine-tuning, evaluation, deployment, and monitoring — with direct applicability to LLMOps research and production ML engineering roles.
+This repository is maintained as a reproducible LLMOps engineering artefact. It is intended to support retrieval-augmented generation engineering, preference-alignment studies on small open models, MLOps toolchain evaluation, and reproducible production deployment of RAG systems. The framework is designed to be modular, portable across commodity GPU hosts, and reusable across production RAG stacks. It demonstrates full-lifecycle systems thinking — data versioning, retrieval, fine-tuning, evaluation, deployment, and monitoring — with direct applicability to LLMOps engineering and production ML engineering roles.
